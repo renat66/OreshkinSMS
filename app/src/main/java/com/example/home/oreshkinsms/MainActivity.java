@@ -1,24 +1,40 @@
 package com.example.home.oreshkinsms;
 
 import android.Manifest;
-import android.app.ListActivity;
 import android.content.CursorLoader;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.net.Uri;
+import android.icu.text.SimpleDateFormat;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.Telephony;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.ListView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.ExponentialBackOff;
+import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.ValueRange;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +43,14 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 
 public class MainActivity extends AppCompatActivity {
+
+    private DatabaseReference mDatabase;
+    private FirebaseAuth mAuth;
+
+    private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS};
+
+    GoogleAccountCredential mCredential;
+
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
@@ -47,9 +71,48 @@ public class MainActivity extends AppCompatActivity {
 
             requestPermission();
         }
+
+//        DatePicker datePicker = (DatePicker) findViewById(R.id.dpResult);
+
+
+//        mAuth.signInWithEmailAndPassword("r@ya.ru", "111111").addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+//            @Override
+//            public void onComplete(@NonNull Task<AuthResult> task) {
+////                   Log.d(TAG, "signIn:onComplete:" + task.isSuccessful());
+////                   hideProgressDialog();
+//
+//                if (task.isSuccessful()) {
+////                       onAuthSuccess(task.getResult().getUser());
+//                } else {
+//                    Toast.makeText(MainActivity.this, "Sign In Failed",
+//                            Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+
+// Now create a SimpleDateFormat object.
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+// Add 1 in month as its 0 based indexing in datePicker but not in SimpleDateFormat
+        String selectedDate = 2017 + "-" + 10 + "-" + 1;
+
+// Now create a start time for this date in order to setup the filter.
+        Date dateStart = null;
+        try {
+            dateStart = formatter.parse(selectedDate + "T00:00:00");
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return;
+        }
+
+// Now create the filter and query the messages.
+        String filter = "date>=" + dateStart.getTime();
+
+
         CursorLoader cl = new CursorLoader(getApplicationContext());
+//        getContentResolver().query(SMS_INBOX, null, filter, null, null);
 
-
+        cl.setSelection(filter);
         cl.setUri(Telephony.Sms.Inbox.CONTENT_URI);
         cl.setProjection(new String[]{
                 Telephony.Sms.Inbox._ID,
@@ -60,10 +123,38 @@ public class MainActivity extends AppCompatActivity {
         cl.setSortOrder("date DESC");
         final Cursor c = cl.loadInBackground();
 
+
+        mCredential = GoogleAccountCredential.usingOAuth2(
+                getApplicationContext(), Arrays.asList(SCOPES))
+                .setBackOff(new ExponentialBackOff());
+
         new Thread(new Runnable() {
+            private com.google.api.services.sheets.v4.Sheets mService ;
             @Override
             public void run() {
 //                List<SMSData> smsList = new ArrayList<>();
+
+                HttpTransport transport = AndroidHttp.newCompatibleTransport();
+                JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+                mService = new com.google.api.services.sheets.v4.Sheets.Builder(
+                        transport, jsonFactory, mCredential)
+                        .setApplicationName("Google Sheets API Android Quickstart")
+                        .build();
+
+
+                String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI/edit";
+                String range = "payments!A2";
+                List<String> results = new ArrayList<String>();
+                ValueRange response = null;
+                try {
+                    response = this.mService.spreadsheets().values()
+                            .get(spreadsheetId, range)
+                            .execute();
+                    List<List<Object>> values = response.getValues();
+                    Log.i("tag", values.toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
 
                 TreeMap<String, List<SMSData>> smss = new TreeMap<>();
