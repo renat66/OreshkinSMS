@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
                         .build();
 
 
-                String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI/edit";
+                String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI";
                 String range = "payments!A2";
                 List<String> results = new ArrayList<String>();
                 ValueRange response = null;
