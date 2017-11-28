@@ -47,9 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference mDatabase;
     private FirebaseAuth mAuth;
 
-    private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS};
 
-    GoogleAccountCredential mCredential;
 
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -124,39 +122,10 @@ public class MainActivity extends AppCompatActivity {
         final Cursor c = cl.loadInBackground();
 
 
-        mCredential = GoogleAccountCredential.usingOAuth2(
-                getApplicationContext(), Arrays.asList(SCOPES))
-                .setBackOff(new ExponentialBackOff());
 
         new Thread(new Runnable() {
-            private com.google.api.services.sheets.v4.Sheets mService ;
             @Override
             public void run() {
-//                List<SMSData> smsList = new ArrayList<>();
-
-                HttpTransport transport = AndroidHttp.newCompatibleTransport();
-                JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-                mService = new com.google.api.services.sheets.v4.Sheets.Builder(
-                        transport, jsonFactory, mCredential)
-                        .setApplicationName("Google Sheets API Android Quickstart")
-                        .build();
-
-
-                String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI";
-                String range = "payments!A2";
-                List<String> results = new ArrayList<String>();
-                ValueRange response = null;
-                try {
-                    response = this.mService.spreadsheets().values()
-                            .get(spreadsheetId, range)
-                            .execute();
-                    List<List<Object>> values = response.getValues();
-                    Log.i("tag", values.toString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-
                 TreeMap<String, List<SMSData>> smss = new TreeMap<>();
                 // Read the sms data and store it in the list
                 if (c.moveToFirst()) {

@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
@@ -43,7 +42,6 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -360,7 +358,8 @@ public class MainActivity2 extends Activity
      * An asynchronous task that handles the Google Sheets API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
-    private class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+    private class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
+        final String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI";
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
 
@@ -379,77 +378,106 @@ public class MainActivity2 extends Activity
          * @param params no parameters needed for this task.
          */
         @Override
-        protected List<String> doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params) {
             try {
-                return getDataFromApi(4L, "Raiffeisen", "1638", "");
+                long timestap = 10L;
+                String number = "900";
+                String amount = "657689";
+                String comment = "";
+                boolean lookupEntryFound = lookupEntry(timestap, number, amount);
+                if (lookupEntryFound) {
+                    return true;
+                }
+                appendEntry(timestap, number, amount, comment);
+                return true;
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
-                return null;
+                return false;
             }
         }
 
 
-        private List<String> getDataFromApi(long timestap, String number, String amount, String comments) throws IOException {
-            String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI";
-            String range = "payments!J6:L6";
+        private boolean lookupEntry(long timestap, String number, String amount) throws IOException {
+            String rangeLookupKeys = "payments!J6:L6";
+            String rangeWithLookupResult = "payments!J7:J7";
 
             //for the values that you want to input, create a list of object lists
-            List<List<Object>> values = new ArrayList<>();
+            List<List<Object>> rows = new ArrayList<>();
 
             //Where each value represents the list of objects that is to be written to a range
             //I simply want to edit a single row, so I use a single list of objects
-            List<Object> data1 = new ArrayList<>();
-            data1.add(number);
-            data1.add(amount);
-            data1.add(timestap);
+            List<Object> columns = new ArrayList<>();
+            columns.add(number);
+            columns.add(amount);
+            columns.add(timestap);
 //            data1.add(comments);
 
             //There are obviously more dynamic ways to do these, but you get the picture
-            values.add(data1);
+            rows.add(columns);
 //            values.add(Collections.<Object>singletonList(number));
 
             //Create the valuerange object and set its fields
             ValueRange valueRange = new ValueRange();
             valueRange.setMajorDimension("ROWS");
-            valueRange.setRange(range);
-            valueRange.setValues(values);
+            valueRange.setRange(rangeLookupKeys);
+            valueRange.setValues(rows);
 
             UpdateValuesResponse raw = this.mService.spreadsheets().values()
-                    .update(spreadsheetId, range, valueRange)
+                    .update(spreadsheetId, rangeLookupKeys, valueRange)
                     .setValueInputOption("RAW")
                     .execute();
             raw.getSpreadsheetId();
-            return new ArrayList<>();
 
-//
-//            List<String> results = new ArrayList<>();
-//
-//            List<List<Object>> values = Arrays.<List<Object>>asList(
-//                    Arrays.asList((Object) timestap),
-//                    Arrays.asList((Object) number),
-//                    Arrays.asList((Object) amount),
-//                    Arrays.asList((Object) comments)
-//                    // Cell values ...
-//
-//                    // Additional rows ...
-//            );
-//            ValueRange body = new ValueRange()//setMajorDimension("COLUMNS")
-//                    .setValues(values);
-//            UpdateValuesResponse response = this.mService.spreadsheets().values()
-//                    .update(spreadsheetId, "J6:L6", body)
-//                    .setValueInputOption("RAW")
-////                    .setIncludeValuesInResponse(false)
-//                    .execute();
-////            List<List<Object>> values = response.getValues();
-////            if (values != null) {
-////                results.add("Name, Major");
-////                for (List row : values) {
-////                    results.add(row.get(0) + ", " + row.get(4));
-////                }
-////            }
-////            return results;
-//            return results;
+            ValueRange lookupResultValues = this.mService.spreadsheets().values()
+                    .get(spreadsheetId, rangeWithLookupResult)
+                    .execute();
+
+            Object lookupResultCellValue = lookupResultValues.getValues().iterator().next().iterator().next();
+
+            if (lookupResultCellValue == null || "not found".equals(lookupResultCellValue.toString())) {
+                return false;
+            }
+            return true;
+        }
+
+        private void appendEntry(long timestap, String number, String amount, String comments) throws IOException {
+            ValueRange lookupResultValues = this.mService.spreadsheets().values()
+                    .get(spreadsheetId, "payments!J5:J5")
+                    .execute();
+
+            Object lastFreeCellStr = lookupResultValues.getValues().iterator().next().iterator().next();
+
+            int lastFreeCell = Integer.parseInt(lastFreeCellStr.toString());
+
+            String freeRowRange = "payments!A" + lastFreeCell + ":D" + lastFreeCell;
+
+
+            //for the values that you want to input, create a list of object lists
+            List<List<Object>> rows = new ArrayList<>();
+
+            //Where each value represents the list of objects that is to be written to a range
+            //I simply want to edit a single row, so I use a single list of objects
+            List<Object> columns = new ArrayList<>();
+            columns.add(timestap);
+            columns.add(number);
+            columns.add(amount);
+            columns.add(comments);
+
+            //There are obviously more dynamic ways to do these, but you get the picture
+            rows.add(columns);
+//            values.add(Collections.<Object>singletonList(number));
+
+            //Create the valuerange object and set its fields
+            ValueRange valueRange = new ValueRange();
+            valueRange.setMajorDimension("ROWS");
+            valueRange.setRange(freeRowRange);
+            valueRange.setValues(rows);
+
+            UpdateValuesResponse raw = this.mService.spreadsheets().values()
+                    .update(spreadsheetId, freeRowRange, valueRange)
+                    .setValueInputOption("RAW")
+                    .execute();
         }
 
 
@@ -460,13 +488,14 @@ public class MainActivity2 extends Activity
         }
 
         @Override
-        protected void onPostExecute(List<String> output) {
+        protected void onPostExecute(Boolean output) {
             mProgress.hide();
-            if (output == null || output.size() == 0) {
+            if (output == null || !output) {
                 mOutputText.setText("No results returned.");
             } else {
-                output.add(0, "Data retrieved using the Google Sheets API:");
-                mOutputText.setText(TextUtils.join("\n", output));
+//                output.add(0, "Data retrieved using the Google Sheets API:");
+//                mOutputText.setText(TextUtils.join("\n", output));
+                mOutputText.setText("Result ok!");
             }
         }
 
