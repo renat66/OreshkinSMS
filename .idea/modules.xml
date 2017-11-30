@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/OreshkinSMSDrafts.iml" filepath="$PROJECT_DIR$/OreshkinSMSDrafts.iml" />
+      <module fileurl="file://$PROJECT_DIR$/OreshkinSMS.iml" filepath="$PROJECT_DIR$/OreshkinSMS.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
