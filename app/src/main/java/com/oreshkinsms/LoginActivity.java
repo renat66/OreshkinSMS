@@ -49,11 +49,8 @@ public class LoginActivity extends AppCompatActivity {
 
         requestSMSReceive();
 
-
-
         mProgress = new ProgressDialog(this);
-        mProgress.setMessage("Calling Google Sheets API ...");
-
+        mProgress.setMessage("Exporting payment SMS to google sheet");
 
         final Button button = findViewById(R.id.buttonStartAction);
         button.setOnClickListener(new View.OnClickListener() {
@@ -64,7 +61,6 @@ public class LoginActivity extends AppCompatActivity {
                 new MakeRequestTask(mCredential, cursor, mProgress, button, LoginActivity.this).execute();
             }
         });
-
     }
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
@@ -77,7 +73,7 @@ public class LoginActivity extends AppCompatActivity {
     @AfterPermissionGranted(REQUEST_PERMISSION_RECEIVE_SMS)
     private void requestSMSReceive() {
         if (EasyPermissions.hasPermissions(this, Manifest.permission.RECEIVE_SMS)) {
-            Toast.makeText(this, "SMS receive granted", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "SMS receive granted", Toast.LENGTH_SHORT).show();
             requestSMSRead();
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
@@ -92,7 +88,7 @@ public class LoginActivity extends AppCompatActivity {
     @AfterPermissionGranted(REQUEST_PERMISSION_READ_SMS)
     private void requestSMSRead() {
         if (EasyPermissions.hasPermissions(this, Manifest.permission.READ_SMS)) {
-            Toast.makeText(this, "SMS read granted", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "SMS read granted", Toast.LENGTH_SHORT).show();
             chooseAccount();
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
@@ -212,7 +208,7 @@ public class LoginActivity extends AppCompatActivity {
         }).collect(Collectors.joining(" or ", "(", ")"));
 
 // Now create the filter and query the messages.
-        String filter = "date>=" + dateStart.getTime() ;//+ " and " + sendersFilter;
+        String filter = "date>=" + dateStart.getTime();//+ " and " + sendersFilter;
 
 
         CursorLoader cl = new CursorLoader(getApplicationContext());
