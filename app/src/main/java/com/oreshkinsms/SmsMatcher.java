@@ -4,16 +4,15 @@ import android.util.Log;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 
 
 public class SmsMatcher {
 
-    public static void parse(SMSData singleSms, Consumer<Payload> payloadConsumer) {
+    public static Payload parse(SMSData singleSms) {
         List<SmsPattern> patterns = SMSPatternsDB.patterns.get(singleSms.getSender());
         if (patterns == null) {
-            return;
+            return null;
         }
         for (SmsPattern smsPattern : patterns) {
             Matcher matcher = smsPattern.getPattern().matcher(singleSms.getBody());
@@ -27,10 +26,9 @@ public class SmsMatcher {
 
                 String text = "Input payment:" + singleSms.getSender() + " Summ=" + summStr + " " + commentStr;
                 Log.i("tag", text);
-                Payload payload = new Payload(singleSms.getSender(), summStr, singleSms.getDate(), commentStr);
-                payloadConsumer.accept(payload);
-                return;
+                return new Payload(singleSms.getSender(), summStr, singleSms.getDate(), commentStr);
             }
         }
+        return null;
     }
 }

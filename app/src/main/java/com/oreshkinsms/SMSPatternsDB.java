@@ -13,12 +13,13 @@ public class SMSPatternsDB {
         addPattern(patterns, new SmsPattern("(Сбербанк Онлайн\\.)(.*)(перевел\\(а\\) Вам)(\\s*)([0-9]+\\.[0-9]+)(\\s*)(RUB)((\\. Сообщение: \\\"(.*)\\\")*)", "900", 5, 10));
         addPattern(patterns, new SmsPattern("(Popolnenie ot klienta Tinkoff Banka\\.)(.*)(Karta \\*2286\\.)(\\s*)([0-9]+\\.[0-9]+)(\\s*)(RUB)(\\. Otpravitel - (.[^\\.]*))", "Tinkoff", 5, 9));
         addPattern(patterns, new SmsPattern("(Popolnenie\\.)(.*)(Karta \\*2286\\.)( Summa *)([0-9]+\\.[0-9]+)(\\s*)(RUB)", "Tinkoff", 5, null));
+        addPattern(patterns, new SmsPattern("(Popolnenie ot klienta Tinkoff Banka\\.)(.*)(Karta \\*2286\\.\\s*Summa )([0-9]+\\.[0-9]+)(\\s*)(RUB)(\\.\\s*Otpravitel\\s*-(.*))", "Tinkoff", 4, 8));
 
         //sber (Сбербанк Онлайн\.)(.*)(перевел\(а\) Вам)(\s*)([0-9]+\.[0-9]+)(\s*)(RUB)((\. Сообщение:.*)*)  S=5 C=10
         //tinkoff to tinkof (Popolnenie ot klienta Tinkoff Banka\.)(.*)(Karta \*2286\.)(\s*)([0-9]+\.[0-9]+)(\s*)(RUB)(\. Otpravitel - (.[^\.]*)) S=5 C=9
         //tinkoff other (Popolnenie\.)(.*)(Karta \*2286\.)( Summa *)([0-9]+\.[0-9]+)(\s*)(RUB)  S=5
+//(Popolnenie ot klienta Tinkoff Banka\.)(.*)(Karta \*2286\.\s*Summa )([0-9]+\.[0-9]+)(\s*)(RUB)(\.\s*Otpravitel\s*-\s*(.[^\.]*)) //!!! modified
 //        Pattern sberPattern = Pattern.compile("(Сбербанк Онлайн\\.)(.*)(перевел\\(а\\) Вам)(\\s*)([0-9]+\\.[0-9]+)(\\s*)(RUB)((\\. Сообщение:.*)*)");
-
     }
 
 

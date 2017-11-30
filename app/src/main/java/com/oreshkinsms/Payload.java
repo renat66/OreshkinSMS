@@ -1,6 +1,8 @@
 package com.oreshkinsms;
 
 
+import java.util.Date;
+
 public class Payload {
     private final String sender;
     private final String amount;
@@ -10,7 +12,8 @@ public class Payload {
     public Payload(String sender, String amount, String time, String comment) {
         this.sender = sender;
         this.amount = amount;
-        this.time = time;
+
+        this.time = new Date(Long.parseLong(time)).toString();
         this.comment = comment;
     }
 

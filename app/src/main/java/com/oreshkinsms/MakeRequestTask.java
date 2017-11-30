@@ -1,8 +1,10 @@
 package com.oreshkinsms;
 
+import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.provider.Telephony;
+import android.widget.Button;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
@@ -16,16 +18,21 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
-    private final String spreadsheetId = "1Hng0jVbDq9YPaS9w1cc-B9r1_paz7crP1f5etqaRLAI";
+    private final String spreadsheetId = "1K6IneCuXl-IoxcxbJFXlTe2uImg_NOQ5xs_v2hUf_ck";
     private com.google.api.services.sheets.v4.Sheets mService = null;
     private Exception mLastError = null;
     private final Cursor cursor;
+    private final ProgressDialog mProgress;
+    final Button button;
+    private final LoginActivity loginActivity;
 
-    MakeRequestTask(GoogleAccountCredential credential, Cursor cursor) {
+    MakeRequestTask(GoogleAccountCredential credential, Cursor cursor, ProgressDialog mProgress, Button button, LoginActivity loginActivity) {
         this.cursor = cursor;
+        this.mProgress = mProgress;
+        this.button = button;
+        this.loginActivity = loginActivity;
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
         mService = new com.google.api.services.sheets.v4.Sheets.Builder(
@@ -35,27 +42,32 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
     }
 
 
-    private void processCursor(Cursor c, Consumer<Payload> payloadConsumer) {
+    private void processCursor(Cursor c) {
         // Read the sms data and store it in the list
-        while (c.moveToNext()) {
-            SMSData sms = new SMSData();
-            sms.setId(c.getString(c.getColumnIndex(Telephony.Sms.Inbox._ID)));
-            sms.setDate(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.DATE)));
-            sms.setBody(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.BODY)));
-            sms.setNumber(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.ADDRESS)));
-            SmsMatcher.parse(sms, payloadConsumer);
+        try {
+            while (c.moveToNext()) {
+                SMSData sms = new SMSData();
+                sms.setId(c.getString(c.getColumnIndex(Telephony.Sms.Inbox._ID)));
+                sms.setDate(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.DATE)));
+                sms.setBody(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.BODY)));
+                sms.setNumber(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.ADDRESS)));
+
+                Payload payload = SmsMatcher.parse(sms);
+                if (payload != null) {
+                    if (!processPayload(payload)) {
+                        break;
+                    }
+                }
+
+            }
+        } finally {
+            c.close();
         }
-        c.close();
     }
 
     @Override
     protected Boolean doInBackground(Void... params) {
-        processCursor(cursor, new Consumer<Payload>() {
-            @Override
-            public void accept(Payload payload) {
-                processPayload(payload);
-            }
-        });
+        processCursor(cursor);
 
         return true;
     }
@@ -128,7 +140,7 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
 
         int lastFreeCell = Integer.parseInt(lastFreeCellStr.toString());
 
-        String freeRowRange = "payments!A" + lastFreeCell + ":D" + lastFreeCell;
+        String freeRowRange = "payments!A" + lastFreeCell + ":H" + lastFreeCell;
 
 
         //for the values that you want to input, create a list of object lists
@@ -140,7 +152,12 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
         columns.add(payload.getTime());
         columns.add(payload.getSender());
         columns.add(payload.getAmount());
-        columns.add(payload.getComment());
+        columns.add(payload.getComment() != null ? payload.getComment() : " ");
+
+        columns.add("=IFERROR(QUERY({'Сухофрукты/Орехи'!B:B,'Сухофрукты/Орехи'!CJ:CJ}, (\"select Col1 where Col2=\"&C" + lastFreeCell + "&\" limit 1\"),0),\"?\")");
+        columns.add("=IFERROR(QUERY({'Сухофрукты/Орехи'!B:B,'Сухофрукты/Орехи'!CJ:CJ}, (\"select count(Col1) where Col2=\"&C" + lastFreeCell + "&\" label count(Col1) ''\"),1),)");
+        columns.add(" ");
+        columns.add("=IFERROR(QUERY({'Сухофрукты/Орехи'!B:B,'Сухофрукты/Орехи'!CJ:CJ}, (\"select Col1 where Col2=\"&C" + lastFreeCell + "&\" offset 1\"),0),\"нет\")");
 
         //There are obviously more dynamic ways to do these, but you get the picture
         rows.add(columns);
@@ -154,7 +171,7 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
 
         UpdateValuesResponse raw = this.mService.spreadsheets().values()
                 .update(spreadsheetId, freeRowRange, valueRange)
-                .setValueInputOption("RAW")
+                .setValueInputOption("USER_ENTERED")
                 .execute();
     }
 
@@ -162,12 +179,13 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
     @Override
     protected void onPreExecute() {
 //        mOutputText.setText("");
-//            mProgress.show();
+        mProgress.show();
     }
 
     @Override
     protected void onPostExecute(Boolean output) {
-//            mProgress.hide();
+        mProgress.hide();
+        button.setEnabled(true);
 //        if (output == null || !output) {
 //            mOutputText.setText("No results returned.");
 //        } else {
@@ -179,13 +197,14 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
 
     @Override
     protected void onCancelled() {
-//            mProgress.hide();
+        mProgress.hide();
+        button.setEnabled(true);
         if (mLastError != null) {
 
             if (mLastError instanceof UserRecoverableAuthIOException) {
-//                startActivityForResult(
-//                        ((UserRecoverableAuthIOException) mLastError).getIntent(),
-//                        LoginActivity.REQUEST_AUTHORIZATION);
+                loginActivity.startActivityForResult(
+                        ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                        LoginActivity.REQUEST_AUTHORIZATION);
             } else {
 //                mOutputText.setText("The following error occurred:\n"
 //                        + mLastError.getMessage());

@@ -48,8 +48,8 @@ public class LoginActivity extends AppCompatActivity {
                 .setBackOff(new ExponentialBackOff());
 
         requestSMSReceive();
-        requestSMSRead();
-        chooseAccount();
+
+
 
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Calling Google Sheets API ...");
@@ -61,7 +61,7 @@ public class LoginActivity extends AppCompatActivity {
                 button.setEnabled(false);
                 // Code here executes on main thread after user presses button
                 Cursor cursor = makeSMSRequest();
-                new MakeRequestTask(mCredential, cursor).execute();
+                new MakeRequestTask(mCredential, cursor, mProgress, button, LoginActivity.this).execute();
             }
         });
 
@@ -78,6 +78,7 @@ public class LoginActivity extends AppCompatActivity {
     private void requestSMSReceive() {
         if (EasyPermissions.hasPermissions(this, Manifest.permission.RECEIVE_SMS)) {
             Toast.makeText(this, "SMS receive granted", Toast.LENGTH_LONG).show();
+            requestSMSRead();
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
             EasyPermissions.requestPermissions(
@@ -92,6 +93,7 @@ public class LoginActivity extends AppCompatActivity {
     private void requestSMSRead() {
         if (EasyPermissions.hasPermissions(this, Manifest.permission.READ_SMS)) {
             Toast.makeText(this, "SMS read granted", Toast.LENGTH_LONG).show();
+            chooseAccount();
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
             EasyPermissions.requestPermissions(
@@ -182,8 +184,7 @@ public class LoginActivity extends AppCompatActivity {
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        EasyPermissions.onRequestPermissionsResult(
-                requestCode, permissions, grantResults, this);
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
 
     private boolean isDeviceOnline() {
@@ -195,7 +196,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private Cursor makeSMSRequest() {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        String selectedDate = 2017 + "-" + 10 + "-" + 1;
+        String selectedDate = 2017 + "-" + 10 + "-" + 20;
         Date dateStart = null;
         try {
             dateStart = formatter.parse(selectedDate + "T00:00:00");
@@ -206,12 +207,12 @@ public class LoginActivity extends AppCompatActivity {
         String sendersFilter = SMSPatternsDB.patterns.keySet().stream().map(new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return "address=\"" + s+"\"";
+                return "address=\"" + s + "\"";
             }
-        }).collect(Collectors.joining(" or ","(",")"));
+        }).collect(Collectors.joining(" or ", "(", ")"));
 
 // Now create the filter and query the messages.
-        String filter = "date>=" + dateStart.getTime() + " and " + sendersFilter;
+        String filter = "date>=" + dateStart.getTime() ;//+ " and " + sendersFilter;
 
 
         CursorLoader cl = new CursorLoader(getApplicationContext());
