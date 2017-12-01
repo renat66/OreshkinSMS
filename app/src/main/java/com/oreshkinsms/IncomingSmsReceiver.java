@@ -27,8 +27,13 @@ public class IncomingSmsReceiver extends BroadcastReceiver {
             if (rawSmsChunk != null) {
                 String senderNum = rawSmsChunk.getDisplayOriginatingAddress();
                 String message = rawSmsChunk.getDisplayMessageBody();
-                Log.i("SmsReceiver", "senderNum: " + senderNum + "; message: " + message);
 
+                if (!SMSPatternsDB.patterns.containsKey(senderNum)) {
+                    //process only payment-related messages
+                    return;
+                }
+
+                Log.i("SmsReceiver", "senderNum: " + senderNum + "; message: " + message);
 
                 // Show alert
                 int duration = Toast.LENGTH_LONG;

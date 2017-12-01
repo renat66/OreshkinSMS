@@ -5,13 +5,13 @@ import java.util.Date;
 
 public class Payload {
     private final String sender;
-    private final String amount;
+    private final Long amount;
     private final String time;
     private final String comment;
 
     public Payload(String sender, String amount, String time, String comment) {
         this.sender = sender;
-        this.amount = amount;
+        this.amount = Double.valueOf(amount).longValue();
 
         this.time = new Date(Long.parseLong(time)).toString();
         this.comment = comment;
@@ -22,7 +22,7 @@ public class Payload {
         return sender;
     }
 
-    public String getAmount() {
+    public Long getAmount() {
         return amount;
     }
 

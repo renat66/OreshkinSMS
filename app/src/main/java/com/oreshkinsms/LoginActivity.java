@@ -192,7 +192,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private Cursor makeSMSRequest() {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        String selectedDate = 2017 + "-" + 10 + "-" + 20;
+        String selectedDate = 2017 + "-" + 11 + "-" + 20;
         Date dateStart = null;
         try {
             dateStart = formatter.parse(selectedDate + "T00:00:00");
@@ -208,7 +208,7 @@ public class LoginActivity extends AppCompatActivity {
         }).collect(Collectors.joining(" or ", "(", ")"));
 
 // Now create the filter and query the messages.
-        String filter = "date>=" + dateStart.getTime();//+ " and " + sendersFilter;
+        String filter = "date>=" + dateStart.getTime()+ " and " + sendersFilter;
 
 
         CursorLoader cl = new CursorLoader(getApplicationContext());

@@ -5,14 +5,12 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class SmsPattern {
-    private final String patternStr;
     private final Pattern pattern;
     private final String sender;
     private final int summIndex;
     private final Integer commentIndex;
 
     public SmsPattern(String pattern, String sender, int summIndex, Integer commentIndex) {
-        this.patternStr = pattern;
         this.sender = sender;
         this.summIndex = summIndex;
         this.commentIndex = commentIndex;

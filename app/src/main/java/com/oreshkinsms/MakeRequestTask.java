@@ -18,6 +18,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
     private final String spreadsheetId = "1K6IneCuXl-IoxcxbJFXlTe2uImg_NOQ5xs_v2hUf_ck";
@@ -52,9 +53,9 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
                 sms.setBody(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.BODY)));
                 sms.setNumber(c.getString(c.getColumnIndex(Telephony.Sms.Inbox.ADDRESS)));
 
-                Payload payload = SmsMatcher.parse(sms);
-                if (payload != null) {
-                    if (!processPayload(payload)) {
+                Optional<Payload> payload = SmsMatcher.parse(sms);
+                if (payload.isPresent()) {
+                    if (!processPayload(payload.get())) {
                         break;
                     }
                 }

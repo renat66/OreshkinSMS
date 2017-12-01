@@ -5,17 +5,20 @@ import android.util.Log;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class SmsMatcher {
 
-    public static Payload parse(SMSData singleSms) {
+    public static Optional<Payload> parse(SMSData singleSms) {
         List<SmsPattern> patterns = SMSPatternsDB.patterns.get(singleSms.getSender());
         if (patterns == null) {
-            return null;
+            return Optional.empty();
         }
+        String body = singleSms.getBody();
         for (SmsPattern smsPattern : patterns) {
-            Matcher matcher = smsPattern.getPattern().matcher(singleSms.getBody());
+            Pattern pattern = smsPattern.getPattern();
+            Matcher matcher = pattern.matcher(body);
             if (matcher.matches()) {
                 final String summStr = matcher.group(smsPattern.getSummIndex());
                 String commentStr = "";
@@ -26,9 +29,14 @@ public class SmsMatcher {
 
                 String text = "Input payment:" + singleSms.getSender() + " Summ=" + summStr + " " + commentStr;
                 Log.i("tag", text);
-                return new Payload(singleSms.getSender(), summStr, singleSms.getDate(), commentStr);
+                return Optional.of(new Payload(singleSms.getSender(), summStr, singleSms.getDate(), commentStr));
+            } else {
+                String text = "Message rejected: " + body + " for pattern: " + pattern.toString();
+                Log.i("tag", text);
             }
         }
-        return null;
+        String text = "Message rejected: " + body;
+        Log.i("tag", text);
+        return Optional.empty();
     }
 }
