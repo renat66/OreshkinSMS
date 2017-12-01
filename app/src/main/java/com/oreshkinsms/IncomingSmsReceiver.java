@@ -3,6 +3,7 @@ package com.oreshkinsms;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -32,6 +33,9 @@ public class IncomingSmsReceiver extends BroadcastReceiver {
                     //process only payment-related messages
                     return;
                 }
+
+//                SharedPreferences prefs = context.getSharedPreferences("myPrefs",
+//                        Context.MODE_PRIVATE);
 
                 Log.i("SmsReceiver", "senderNum: " + senderNum + "; message: " + message);
 

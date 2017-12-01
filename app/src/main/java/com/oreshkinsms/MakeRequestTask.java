@@ -1,5 +1,7 @@
 package com.oreshkinsms;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -27,7 +29,9 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
     private final Cursor cursor;
     private final ProgressDialog mProgress;
     final Button button;
-    private final LoginActivity loginActivity;
+    private final Activity loginActivity;
+
+    int uploadedSmsCounter = 0;
 
     MakeRequestTask(GoogleAccountCredential credential, Cursor cursor, ProgressDialog mProgress, Button button, LoginActivity loginActivity) {
         this.cursor = cursor;
@@ -80,6 +84,7 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
                 return true;
             }
             appendEntry(payload);
+            uploadedSmsCounter++;
             return true;
         } catch (Exception e) {
             mLastError = e;
@@ -179,7 +184,6 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
 
     @Override
     protected void onPreExecute() {
-//        mOutputText.setText("");
         mProgress.show();
     }
 
@@ -187,13 +191,12 @@ class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
     protected void onPostExecute(Boolean output) {
         mProgress.hide();
         button.setEnabled(true);
-//        if (output == null || !output) {
-//            mOutputText.setText("No results returned.");
-//        } else {
-////                output.add(0, "Data retrieved using the Google Sheets API:");
-////                mOutputText.setText(TextUtils.join("\n", output));
-//            mOutputText.setText("Result ok!");
-//        }
+        AlertDialog.Builder alert = new AlertDialog.Builder(loginActivity);
+        String title = "Comleted " + (mLastError != null ? "with fail" : "sucessfully");
+        alert.setTitle(title);
+        alert.setMessage("Uploaded " + uploadedSmsCounter + " new messages. Errors: " + mLastError);
+        alert.setPositiveButton("OK", null);
+        alert.show();
     }
 
     @Override

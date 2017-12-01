@@ -24,7 +24,7 @@ import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
 
 import java.text.ParseException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,7 +35,8 @@ import pub.devrel.easypermissions.EasyPermissions;
 public class LoginActivity extends AppCompatActivity {
     GoogleAccountCredential mCredential;
     ProgressDialog mProgress;
-    private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS};
+    private MakeRequestTask makeRequestTask;
+    Button button;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(
-                getApplicationContext(), Arrays.asList(SCOPES))
+                getApplicationContext(), Collections.singletonList(SheetsScopes.SPREADSHEETS))
                 .setBackOff(new ExponentialBackOff());
 
         requestSMSReceive();
@@ -52,16 +53,20 @@ public class LoginActivity extends AppCompatActivity {
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Exporting payment SMS to google sheet");
 
-        final Button button = findViewById(R.id.buttonStartAction);
+        button = findViewById(R.id.buttonStartAction);
         button.setOnClickListener(new View.OnClickListener() {
+
+
             public void onClick(View v) {
                 button.setEnabled(false);
                 // Code here executes on main thread after user presses button
                 Cursor cursor = makeSMSRequest();
-                new MakeRequestTask(mCredential, cursor, mProgress, button, LoginActivity.this).execute();
+                makeRequestTask = new MakeRequestTask(mCredential, cursor, mProgress, button, LoginActivity.this);
+                makeRequestTask.execute();
             }
         });
     }
+
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -160,6 +165,8 @@ public class LoginActivity extends AppCompatActivity {
             }
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
+                    mProgress.hide();
+                    button.setEnabled(true);
 //                    getResultsFromApi();
                 }
                 break;
@@ -208,7 +215,7 @@ public class LoginActivity extends AppCompatActivity {
         }).collect(Collectors.joining(" or ", "(", ")"));
 
 // Now create the filter and query the messages.
-        String filter = "date>=" + dateStart.getTime()+ " and " + sendersFilter;
+        String filter = "date>=" + dateStart.getTime() + " and " + sendersFilter;
 
 
         CursorLoader cl = new CursorLoader(getApplicationContext());
@@ -222,7 +229,7 @@ public class LoginActivity extends AppCompatActivity {
                 Telephony.Sms.Inbox.DATE,
                 Telephony.Sms.Inbox.ADDRESS,
         });
-        cl.setSortOrder("date DESC");
+        cl.setSortOrder("date DESC"); // to upload fresh sms first
         return cl.loadInBackground();
     }
 
